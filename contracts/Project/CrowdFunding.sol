@@ -3,16 +3,21 @@
 pragma solidity >=0.7.0 <0.9.0;
 
 contract CrowdFunding {
-    string public id;
-    string public name;
-    string public description;
-    address payable public author;
-    string public state = "Opened";
-    uint256 public funds;
-    uint256 public fundraisingGoal;
+    struct Project{
+        string id;
+        string name;
+        string  description;
+        address payable author;
+        uint256 state;
+        uint256 funds;
+        uint256 fundraisingGoal;
+    }
+    
+    Project public project;
     
     event ProjectFunded(string projectId, uint256 value);
-    event ProjectStateChanged(string id, string state);
+
+    event ProjectStateChanged(string id, uint256 state);
 
     constructor(
         string memory _id,
@@ -20,31 +25,41 @@ contract CrowdFunding {
         string memory _description,
         uint256 _fundraisingGoal
     ) {
-        id = _id;
-        name = _name;
-        description = _description;
-        fundraisingGoal = _fundraisingGoal;
-        author = payable(msg.sender);
+        project = Project(
+            _id,
+            _name,
+            _description,
+            payable(msg.sender),
+            0,
+            0,
+            _fundraisingGoal
+        );
     }
 
     modifier isAuthor() {
-        require(msg.sender == author, "You need to be the owner project author");
+        require(project.author == msg.sender, "You need to be the project author");
         _;
-    }
-    
-    modifier isNotAuthor() {
-        require(msg.sender != author, "As Author you can't fund your own project");
-        _;
-    }
-    
-    function fundProject() public payable isNotAuthor {
-        author.transfer(msg.value);
-        funds += msg.value;
-        emit ProjectFunded(id, msg.value);
     }
 
-    function changeProjectState(string calldata newState) public isAuthor {
-        state = newState;
-        emit ProjectStateChanged(id, newState);
+    modifier isNotAuthor() {
+        require(
+            project.author != msg.sender,
+            "As author you can not fund your own project"
+        );
+        _;
+    }
+
+    function fundProject() public payable isNotAuthor {
+        require(project.state != 1, "The project can not receive funds");
+        require(msg.value > 0, "Fund value must be greater than 0");
+        project.author.transfer(msg.value);
+        project.funds += msg.value;
+        emit ProjectFunded(project.id, msg.value);
+    }
+
+    function changeProjectState(uint256 newState) public isAuthor {
+        require(project.state != newState, "New state must be different");
+        project.state = newState;
+        emit ProjectStateChanged(project.id, newState);
     }
 }
