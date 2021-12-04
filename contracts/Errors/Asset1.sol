@@ -2,7 +2,7 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 
-contract Asset {
+contract Asset1 {
     string public state = "onSale";
     
     error StateNotDefined(uint unit);
